@@ -1,4 +1,7 @@
-﻿namespace Evaluator.Logic;
+﻿using System.Globalization;
+using System.Text;
+
+namespace Evaluator.Logic;
 
 public class FunctionEvaluator
 {
@@ -8,113 +11,118 @@ public class FunctionEvaluator
         return Calculate(postfix);
     }
 
-    private static double Calculate(string postfix)
+    private static double Calculate(List<string> postfix)
     {
         var stack = new Stack<double>();
-        foreach (var item in postfix)
+
+        foreach (var token in postfix)
         {
-            if (IsOperator(item))
+            if (double.TryParse(token, NumberStyles.Any, CultureInfo.InvariantCulture, out double number)) // se agrega
             {
-                var operator2 = stack.Pop();
-                var operator1 = stack.Pop();
-                stack.Push(Result(operator1, item, operator2));
+                stack.Push(number);
             }
-            else
+            else if (IsOperator(token))
             {
-                stack.Push(char.GetNumericValue(item));
+                var operand2 = stack.Pop();
+                var operand1 = stack.Pop();
+                stack.Push(Result(operand1, token, operand2));
             }
         }
         return stack.Pop();
     }
 
-    private static double Result(double operator1, char item, double operator2)
+    private static double Result(double operand1, string op, double operand2)
     {
-        return item switch
+        return op switch
         {
-            '+' => operator1 + operator2,
-            '-' => operator1 - operator2,
-            '*' => operator1 * operator2,
-            '/' => operator1 / operator2,
-            '^' => Math.Pow(operator1, operator2),
-            _ => throw new Exception("Invalid expresion"),
+            "+" => operand1 + operand2,
+            "-" => operand1 - operand2,
+            "*" => operand1 * operand2,
+            "/" => operand1 / operand2,
+            "^" => Math.Pow(operand1, operand2),
+            _ => throw new Exception("Expresión inválida"),
         };
     }
 
-    private static string ToPostfix(string infix)
+    private static List<string> ToPostfix(string infix) // se modifica
     {
-        var stack = new Stack<char>();
-        var postfix = string.Empty;
-        foreach (var item in infix)
+        var stack = new Stack<string>();
+        var postfix = new List<string>();
+        var numberBuilder = new StringBuilder();
+
+        foreach (var ch in infix)
         {
-            if (IsOperator(item))
+            if (char.IsDigit(ch) || ch == '.')
             {
-                if (stack.Count == 0)
-                {
-                    stack.Push(item);
-                }
-                else
-                {
-                    if (item == ')')
-                    {
-                        do
-                        {
-                            postfix += stack.Pop();
-                        } while (stack.Peek() != '(');
-                        stack.Pop();
-                    }
-                    else
-                    {
-                        if (PriorityExpression(item) > PriorityStack(stack.Peek()))
-                        {
-                            stack.Push(item);
-                        }
-                        else
-                        {
-                            postfix += stack.Pop();
-                            stack.Push(item);
-                        }
-                    }
-                }
+                numberBuilder.Append(ch);
             }
             else
             {
-                postfix += item;
+                if (numberBuilder.Length > 0)
+                {
+                    postfix.Add(numberBuilder.ToString());
+                    numberBuilder.Clear();
+                }
+
+                if (IsOperator(ch.ToString()))
+                {
+                    while (stack.Count > 0 && PriorityExpression(ch.ToString()) <= PriorityStack(stack.Peek()))
+                    {
+                        postfix.Add(stack.Pop());
+                    }
+                    stack.Push(ch.ToString());
+                }
+                else if (ch == '(')
+                {
+                    stack.Push(ch.ToString());
+                }
+                else if (ch == ')')
+                {
+                    while (stack.Peek() != "(")
+                    {
+                        postfix.Add(stack.Pop());
+                    }
+                    stack.Pop();
+                }
             }
         }
-        do
+
+        if (numberBuilder.Length > 0)
         {
-            postfix += stack.Pop();
-        } while (stack.Count > 0);
+            postfix.Add(numberBuilder.ToString());
+        }
+
+        while (stack.Count > 0)
+        {
+            postfix.Add(stack.Pop());
+        }
+
         return postfix;
     }
 
-    private static int PriorityStack(char item)
+    private static int PriorityStack(string op) => op switch
     {
-        return item switch
-        {
-            '^' => 3,
-            '*' => 2,
-            '/' => 2,
-            '+' => 1,
-            '-' => 1,
-            '(' => 0,
-            _ => throw new Exception("Invalid expression."),
-        };
-    }
+        "^" => 3,
+        "*" => 2,
+        "/" => 2,
+        "+" => 1,
+        "-" => 1,
+        "(" => 0,
+        _ => throw new Exception("Expresión inválida."),
+    };
 
-    private static int PriorityExpression(char item)
+    private static int PriorityExpression(string op) => op switch
     {
-        return item switch
-        {
-            '^' => 4,
-            '*' => 2,
-            '/' => 2,
-            '+' => 1,
-            '-' => 1,
-            '(' => 5,
-            _ => throw new Exception("Invalid expression."),
-        };
-    }
+        "^" => 4,
+        "*" => 2,
+        "/" => 2,
+        "+" => 1,
+        "-" => 1,
+        "(" => 5,
+        _ => throw new Exception("Expresión inválida."),
+    };
 
-    private static bool IsOperator(char item) => "()^*/+-".IndexOf(item) >= 0;
+    private static bool IsOperator(string op) => "+-*/^".Contains(op);
 }
+
+
