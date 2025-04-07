@@ -19,19 +19,19 @@ public class FunctionEvaluator
         {
             if (double.TryParse(token, NumberStyles.Any, CultureInfo.InvariantCulture, out double number)) // se agrega
             {
-                stack.Push(number);
+                stack.Push(number); // se agrega
             }
-            else if (IsOperator(token))
+            else if (IsOperator(token)) // se agrega 
             {
                 var operand2 = stack.Pop();
                 var operand1 = stack.Pop();
-                stack.Push(Result(operand1, token, operand2));
+                stack.Push(Result(operand1, token, operand2));  // se modifica
             }
         }
         return stack.Pop();
     }
 
-    private static double Result(double operand1, string op, double operand2)
+    private static double Result(double operand1, string op, double operand2) // se modifica
     {
         return op switch
         {
@@ -46,9 +46,9 @@ public class FunctionEvaluator
 
     private static List<string> ToPostfix(string infix) // se modifica
     {
-        var stack = new Stack<string>();
-        var postfix = new List<string>();
-        var numberBuilder = new StringBuilder();
+        var stack = new Stack<string>();  // se modifica
+        var postfix = new List<string>();  // se modifica
+        var numberBuilder = new StringBuilder(); // se agrega 
 
         foreach (var ch in infix)
         {
